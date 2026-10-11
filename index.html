@@ -1,0 +1,134 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <meta
+    name="description"
+    content="Search archived National Weather Service spot forecasts by project, national forest, and issuance date."
+  >
+
+  <title>Spot Forecast Archive | RxSmoke</title>
+
+  <link rel="stylesheet" href="style.css">
+  <script src="archive.js" defer></script>
+</head>
+
+<body>
+
+  <div class="site-container">
+
+    <header class="site-header">
+      <div class="brand">RxSmoke</div>
+      <p class="subtitle">Spot Forecast Archive</p>
+    </header>
+
+    <main>
+
+      <section class="intro">
+        <h1>Spot Forecast Archive</h1>
+        <p>
+          Search historical National Weather Service spot forecasts
+          issued across the Southern Area.
+        </p>
+      </section>
+
+      <section class="archive-panel" aria-label="Forecast search">
+
+        <div class="search-field">
+          <label for="project-search">Search by Project Name</label>
+          <input
+            type="search"
+            id="project-search"
+            placeholder="Enter project name..."
+          >
+        </div>
+
+        <div class="filter-grid">
+
+          <div class="filter-field">
+            <label for="forest-filter">National Forest</label>
+            <select id="forest-filter">
+              <option value="">All Forests</option>
+            </select>
+          </div>
+
+          <div class="filter-field">
+            <label for="date-filter">Issuance Date</label>
+            <input type="date" id="date-filter">
+          </div>
+
+        </div>
+
+        <div class="filter-actions">
+          <button type="button" id="clear-filters">
+            Clear Filters
+          </button>
+        </div>
+
+      </section>
+
+      <section class="results-section" aria-label="Archived forecasts">
+
+        <div class="results-header">
+          <h2>Archived Forecasts</h2>
+          <p id="result-count" aria-live="polite">
+            Loading forecasts...
+          </p>
+        </div>
+
+        <div id="forecast-results" class="forecast-results">
+        </div>
+
+      </section>
+
+      <section
+        id="forecast-viewer"
+        class="forecast-viewer"
+        aria-label="Selected forecast"
+        hidden
+      >
+
+        <div class="viewer-header">
+          <div>
+            <h2 id="viewer-title">Forecast</h2>
+            <p id="viewer-meta"></p>
+          </div>
+
+          <button type="button" id="close-viewer">
+            Close
+          </button>
+        </div>
+
+        <div class="viewer-actions">
+          <a
+            id="download-forecast"
+            href="#"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Open Original Text
+          </a>
+        </div>
+
+        <pre id="forecast-text"></pre>
+
+      </section>
+
+    </main>
+
+    <footer class="site-footer">
+      <p>RxSmoke &middot; Prescribed Fire Smoke Tools</p>
+      <p>
+        <a href="https://rxsmoke.org/">
+          Return to RxSmoke
+        </a>
+      </p>
+    </footer>
+
+  </div>
+
+</body>
+</html>
