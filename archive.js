@@ -35,6 +35,11 @@ let forecasts = [];
 let selectedForecast = null;
 let viewerRequest = 0;
 
+// Save the viewer's original location so it can be
+// restored before rebuilding the forecast cards.
+const viewerHome = document.createComment("forecast viewer home");
+viewer.before(viewerHome);
+
 // --------------------------------------------------
 // 3. Helpers
 // --------------------------------------------------
@@ -130,6 +135,12 @@ function getFilteredForecasts() {
 }
 
 function renderResults() {
+
+  // Close the current forecast and move the viewer
+  // outside the results before removing any cards.
+  hideViewer();
+  viewerHome.after(viewer);
+
   const filtered = getFilteredForecasts();
 
   resultCount.textContent =
@@ -193,7 +204,11 @@ function renderResults() {
     );
 
     button.type = "button";
-    button.addEventListener("click", () => openForecast(item));
+
+    // Open the viewer directly below this card.
+    button.addEventListener("click", () => {
+      openForecast(item, card);
+    });
 
     card.appendChild(button);
     fragment.appendChild(card);
@@ -216,9 +231,13 @@ function renderResults() {
 // 6. Open and close forecast viewer
 // --------------------------------------------------
 
-async function openForecast(item) {
+async function openForecast(item, card) {
   const requestId = ++viewerRequest;
+
   selectedForecast = item;
+
+  // Move the viewer immediately below the selected card.
+  card.after(viewer);
 
   viewerTitle.textContent =
     item.project_name || "Unnamed Project";
@@ -231,6 +250,9 @@ async function openForecast(item) {
 
   forecastText.textContent = "Loading forecast...";
 
+  // Show the viewer without scrolling the page.
+  viewer.hidden = false;
+
   let url;
 
   try {
@@ -238,16 +260,12 @@ async function openForecast(item) {
   } catch (error) {
     forecastText.textContent =
       "This forecast has an invalid archive file path.";
+
     downloadForecast.removeAttribute("href");
-    viewer.hidden = false;
-    viewer.scrollIntoView({ behavior: "smooth" });
     return;
   }
 
   downloadForecast.href = url;
-
-  viewer.hidden = false;
-  viewer.scrollIntoView({ behavior: "smooth" });
 
   try {
     const response = await fetch(url);
@@ -258,7 +276,8 @@ async function openForecast(item) {
 
     const text = await response.text();
 
-    // Ignore older requests if another forecast was selected.
+    // Ignore older requests if another forecast was selected
+    // or the viewer was closed.
     if (requestId !== viewerRequest) return;
 
     forecastText.textContent = text;
@@ -275,8 +294,23 @@ async function openForecast(item) {
 function hideViewer() {
   ++viewerRequest;
   selectedForecast = null;
+
+  // Identify the card immediately preceding the viewer.
+  const card = viewer.previousElementSibling;
+
+  // Remember its position before collapsing the viewer.
+  const cardTop = card?.classList.contains("forecast-card")
+    ? card.getBoundingClientRect().top
+    : null;
+
   viewer.hidden = true;
   forecastText.textContent = "";
+
+  // Preserve the card's position after the viewer closes.
+  if (cardTop !== null) {
+    const newTop = card.getBoundingClientRect().top;
+    window.scrollBy(0, newTop - cardTop);
+  }
 }
 
 // --------------------------------------------------
@@ -341,7 +375,6 @@ clearFilters.addEventListener("click", () => {
   forestFilter.value = "";
   dateFilter.value = "";
 
-  hideViewer();
   renderResults();
 });
 
