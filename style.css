@@ -64,7 +64,7 @@ a {
 -------------------------------------------------- */
 
 .intro {
-  padding: 36px 0 26px;
+  padding: 48px 0 30px;
 }
 
 .intro h1 {
@@ -394,5 +394,85 @@ button {
   #forecast-text {
     padding: 14px;
     font-size: 0.76rem;
+  }
+}
+
+/* --------------------------------------------------
+   9. Connected, expandable forecast records
+-------------------------------------------------- */
+
+:root {
+  --selected: #e8f0f8;
+  --selected-border: #6d94b7;
+  --reading-surface: #f6f8fb;
+}
+
+/* A touch more contrast without departing from the RxSmoke palette. */
+.archive-panel {
+  background: #edf3f9;
+  border-color: #cbdbe9;
+}
+
+.forecast-results { gap: 10px; }
+
+.forecast-card {
+  padding: 16px 20px;
+  scroll-margin-top: 18px;
+}
+
+.forecast-card button {
+  margin-top: 9px;
+  text-decoration: none;
+}
+
+.forecast-card button:hover { text-decoration: underline; }
+
+.forecast-card.is-expanded {
+  background: var(--selected);
+  border-color: var(--selected-border);
+  border-bottom-color: #c4d7e8;
+  border-radius: 12px 12px 0 0;
+  box-shadow: none;
+  position: relative;
+  z-index: 1;
+}
+
+/* Cancel the flex gap between the expanded card and its viewer. */
+.forecast-card.is-expanded + .forecast-viewer {
+  margin-top: -10px;
+  margin-bottom: 2px;
+  padding: 16px 20px 20px;
+  border: 1px solid var(--selected-border);
+  border-top: none;
+  border-radius: 0 0 12px 12px;
+  box-shadow: 0 8px 18px rgba(6, 40, 76, 0.07);
+}
+
+/* The selected record already displays the title and metadata above. */
+.forecast-card.is-expanded + .forecast-viewer .viewer-header h2,
+.forecast-card.is-expanded + .forecast-viewer #viewer-meta {
+  display: none;
+}
+
+.forecast-card.is-expanded + .forecast-viewer .viewer-header {
+  justify-content: flex-end;
+}
+
+.forecast-card.is-expanded + .forecast-viewer .viewer-actions {
+  margin: 0 0 12px;
+}
+
+#forecast-text {
+  background: var(--reading-surface);
+  border-color: #d9e4ef;
+}
+
+@media (max-width: 700px) {
+  .forecast-card { padding: 14px 16px; }
+  .forecast-card.is-expanded + .forecast-viewer {
+    padding: 14px 16px 16px;
+  }
+  .forecast-card.is-expanded + .forecast-viewer .viewer-header {
+    align-items: flex-end;
   }
 }

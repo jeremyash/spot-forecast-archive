@@ -30,15 +30,14 @@ const viewerMeta = document.getElementById("viewer-meta");
 const forecastText = document.getElementById("forecast-text");
 const downloadForecast = document.getElementById("download-forecast");
 const closeViewer = document.getElementById("close-viewer");
+// Keep a permanent home for the viewer when result cards are rebuilt.
+const viewerHome = document.createComment("forecast viewer home");
+viewer.before(viewerHome);
 
 let forecasts = [];
 let selectedForecast = null;
 let viewerRequest = 0;
-
-// Save the viewer's original location so it can be
-// restored before rebuilding the forecast cards.
-const viewerHome = document.createComment("forecast viewer home");
-viewer.before(viewerHome);
+let activeCard = null;
 
 // --------------------------------------------------
 // 3. Helpers
@@ -135,9 +134,7 @@ function getFilteredForecasts() {
 }
 
 function renderResults() {
-
-  // Close the current forecast and move the viewer
-  // outside the results before removing any cards.
+  // Return the viewer to its permanent home before replacing result cards.
   hideViewer();
   viewerHome.after(viewer);
 
@@ -204,11 +201,9 @@ function renderResults() {
     );
 
     button.type = "button";
-
-    // Open the viewer directly below this card.
-    button.addEventListener("click", () => {
-      openForecast(item, card);
-    });
+    button.setAttribute("aria-expanded", "false");
+    button.setAttribute("aria-controls", "forecast-viewer");
+    button.addEventListener("click", () => openForecast(item, card));
 
     card.appendChild(button);
     fragment.appendChild(card);
@@ -232,85 +227,90 @@ function renderResults() {
 // --------------------------------------------------
 
 async function openForecast(item, card) {
+  // Clicking the already-expanded record closes it.
+  if (activeCard === card && !viewer.hidden) {
+    hideViewer(true);
+    return;
+  }
+
+  // Clear the previous selection, if any.
+  hideViewer(false);
   const requestId = ++viewerRequest;
-
   selectedForecast = item;
+  activeCard = card;
+  card.classList.add("is-expanded");
+  const button = card.querySelector("button");
+  if (button) {
+    button.textContent = "Hide Forecast ↑";
+    button.setAttribute("aria-expanded", "true");
+  }
 
-  // Move the viewer immediately below the selected card.
+  // Place the shared viewer immediately after its selected card.
   card.after(viewer);
-
-  viewerTitle.textContent =
-    item.project_name || "Unnamed Project";
-
+  viewerTitle.textContent = item.project_name || "Unnamed Project";
   viewerMeta.textContent = [
     item.forest,
     item.issuance_time_local || formatDate(item.issuance_date),
     item.spot_id ? `Spot ID: ${item.spot_id}` : ""
   ].filter(Boolean).join(" · ");
-
   forecastText.textContent = "Loading forecast...";
-
-  // Show the viewer without scrolling the page.
   viewer.hidden = false;
 
-  let url;
+  // Bring the selected record into view so the expanded content is obvious.
+  requestAnimationFrame(() => {
+    if (activeCard === card) {
+      card.scrollIntoView({
+        behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+          ? "auto" : "smooth",
+        block: "start"
+      });
+    }
+  });
 
+  let url;
   try {
     url = makeTextUrl(item.archive_file);
   } catch (error) {
-    forecastText.textContent =
-      "This forecast has an invalid archive file path.";
-
+    forecastText.textContent = "This forecast has an invalid archive file path.";
     downloadForecast.removeAttribute("href");
     return;
   }
-
   downloadForecast.href = url;
 
   try {
     const response = await fetch(url);
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const text = await response.text();
-
-    // Ignore older requests if another forecast was selected
-    // or the viewer was closed.
     if (requestId !== viewerRequest) return;
-
     forecastText.textContent = text;
-
   } catch (error) {
     if (requestId !== viewerRequest) return;
-
     forecastText.textContent =
-      "Unable to load this forecast. " +
-      "Use 'Open Original Text' to view it directly.";
+      "Unable to load this forecast. Use 'Open Original Text' to view it directly.";
   }
 }
 
-function hideViewer() {
+function hideViewer(returnToCard = false) {
   ++viewerRequest;
+  const card = activeCard;
   selectedForecast = null;
 
-  // Identify the card immediately preceding the viewer.
-  const card = viewer.previousElementSibling;
+  // If the reader is far down a long forecast, return to its header first.
+  if (returnToCard && card) {
+    card.scrollIntoView({ behavior: "instant", block: "start" });
+  }
 
-  // Remember its position before collapsing the viewer.
-  const cardTop = card?.classList.contains("forecast-card")
-    ? card.getBoundingClientRect().top
-    : null;
-
+  if (card) {
+    card.classList.remove("is-expanded");
+    const button = card.querySelector("button");
+    if (button) {
+      button.textContent = "View Forecast →";
+      button.setAttribute("aria-expanded", "false");
+    }
+  }
+  activeCard = null;
   viewer.hidden = true;
   forecastText.textContent = "";
-
-  // Preserve the card's position after the viewer closes.
-  if (cardTop !== null) {
-    const newTop = card.getBoundingClientRect().top;
-    window.scrollBy(0, newTop - cardTop);
-  }
 }
 
 // --------------------------------------------------
@@ -378,7 +378,7 @@ clearFilters.addEventListener("click", () => {
   renderResults();
 });
 
-closeViewer.addEventListener("click", hideViewer);
+closeViewer.addEventListener("click", () => hideViewer(true));
 
 // --------------------------------------------------
 // 9. Initialize
