@@ -6,6 +6,7 @@
 // --------------------------------------------------
 
 const INDEX_URL = "data/forecasts.json";
+const STATUS_URL = "data/archive-status.json";
 
 const ARCHIVE_BASE_URL =
   "https://raw.githubusercontent.com/" +
@@ -20,6 +21,7 @@ const projectSearch = document.getElementById("project-search");
 const forestFilter = document.getElementById("forest-filter");
 const dateFilter = document.getElementById("date-filter");
 const clearFilters = document.getElementById("clear-filters");
+const archiveUpdated = document.getElementById("archive-updated");
 
 const resultCount = document.getElementById("result-count");
 const forecastResults = document.getElementById("forecast-results");
@@ -57,6 +59,47 @@ function formatDate(dateString) {
     month: "long",
     day: "numeric"
   });
+}
+
+async function loadArchiveStatus() {
+  try {
+    const response = await fetch(STATUS_URL, {
+      cache: "no-cache"
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const status = await response.json();
+    const timestamp = status.last_updated_utc;
+
+    if (!timestamp) {
+      throw new Error("Missing archive completion timestamp.");
+    }
+
+    const date = new Date(timestamp);
+
+    if (Number.isNaN(date.getTime())) {
+      throw new Error("Invalid archive completion timestamp.");
+    }
+
+    const formatted = new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/New_York",
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      timeZoneName: "short"
+    }).format(date);
+
+    archiveUpdated.textContent = `Last updated: ${formatted}`;
+
+  } catch (error) {
+    console.error("Failed to load archive status:", error);
+    archiveUpdated.textContent = "Last updated: Unavailable";
+  }
 }
 
 function makeTextUrl(archiveFile) {
@@ -385,3 +428,4 @@ closeViewer.addEventListener("click", () => hideViewer(true));
 // --------------------------------------------------
 
 loadForecasts();
+loadArchiveStatus();
